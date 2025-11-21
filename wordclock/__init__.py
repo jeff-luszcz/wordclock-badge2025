@@ -356,35 +356,33 @@ def update():
     font = PixelFont.load("/system/assets/fonts/awesome.ppf")
     screen.font = font
     
-    # Check if wlan_global exists
-    if not wlan_global:
-        screen.brush = brushes.color(255, 0, 0)
-        screen.text("WiFi not init", 0, 0)
-        screen.text("Check secrets.py", 0, 15)
-        return None
-    
-    # Check WiFi connectivity
-    if not wlan_global.isconnected():
-        screen.brush = brushes.color(255, 0, 0)
-        screen.text("No WiFi", 0, 0)
-        screen.text("Connection", 0, 15)
-        # Try to reconnect
-        if WIFI_SSID and WIFI_PASSWORD:
-            screen.text("Reconnecting...", 0, 30)
-            wlan_global.connect(WIFI_SSID, WIFI_PASSWORD)
-        ntp_synced = False  # Reset NTP sync flag if WiFi drops
-        return None
-    
-    # WiFi is connected - try NTP sync once
+    # Only check WiFi status if NTP hasn't synced yet
     if not ntp_synced:
+        # Check if wlan_global exists
+        if not wlan_global:
+            screen.brush = brushes.color(255, 0, 0)
+            screen.text("WiFi not init", 0, 0)
+            screen.text("Check secrets.py", 0, 15)
+            return None
+        
+        # Check WiFi connectivity
+        if not wlan_global.isconnected():
+            screen.brush = brushes.color(255, 0, 0)
+            screen.text("No WiFi", 0, 0)
+            screen.text("Connection", 0, 15)
+            # Try to reconnect
+            if WIFI_SSID and WIFI_PASSWORD:
+                screen.text("Reconnecting...", 0, 30)
+                wlan_global.connect(WIFI_SSID, WIFI_PASSWORD)
+            return None
+        
+        # WiFi is connected - try NTP sync once
         try:
             screen.brush = brushes.color(255, 255, 0)
             screen.text("WiFi Connected!", 0, 0)
             screen.text("Syncing time...", 0, 15)
             ntptime.settime()
-
             ntp_synced = True
-
             screen.text("Time synced!", 0, 30)
             time.sleep(2)
         except Exception as e:
@@ -393,9 +391,9 @@ def update():
             screen.text("NTP sync failed:", 0, 15)
             screen.text(str(e)[:20], 0, 30)
             time.sleep(2)
-            ntp_synced = False  # Don't keep retrying every frame
+            return None
     
-    # Clear and show status
+    # Clear and show clock (only reached if ntp_synced is True)
     screen.brush = brushes.color(0, 0, 0)
     screen.draw(shapes.rectangle(0, 0, 160, 120))
     screen.font = font
